@@ -1,33 +1,29 @@
-from data import data_set
+import json
+import collections
 
 searched = set()
+films_data = json.load(file('sample_data.json'))
+actor_index = collections.defaultdict(set)
 
-
-def films_staring(actor):
-
-    films = set()
-
-    for film, actors in data_set.iteritems():
-        if actor in actors:
-            films.add(film)
-
-    return films
+for film, actors in films_data.iteritems():
+    for actor in actors:
+        actor_index[actor].add(film)
 
 
 def check_actor_films(actor_1, actor_2):
 
-    for film in films_staring(actor_1):
-        if actor_2 in data_set[film]:
+    for film in actor_index[actor_1]:
+        if actor_2 in films_data[film]:
             return film
 
-limit = None
+best_len = None
 
 
 def main(actor_1, actor_2):
 
-    global limit
+    global best_len
 
-    films = films_staring(actor_1)
+    films = actor_index[actor_1]
 
     best = None
     worst = None
@@ -35,8 +31,8 @@ def main(actor_1, actor_2):
     for i, result in enumerate(go_deep(films, actor_2)):
 
         if best is None or len(result) < len(best):
-            best = result[:]
-            limit = len(best)
+            best = result
+            best_len = len(best)
 
         if worst is None or len(result) > len(worst):
             worst = result
@@ -49,7 +45,7 @@ def main(actor_1, actor_2):
 
     print "\nLinked by the following films:"
     for film in best:
-        print "- %s (%s)" % (film, ', '.join(sorted(data_set[film])))
+        print "- %s (%s)" % (film, ', '.join(sorted(films_data[film])))
 
 
 def go_deep(films, target, branch=None):
@@ -61,19 +57,21 @@ def go_deep(films, target, branch=None):
 
         searched.add(film)
 
-        if not branch:
+        if branch is None:
             branch = []
+        else:
+            branch = branch[:]
 
         branch.append(film)
 
-        for actor in data_set[film]:
+        for actor in films_data[film]:
 
             common = check_actor_films(actor, target)
             if common:
                 branch.append(common)
-                yield branch
-            elif limit is None or len(branch) < limit:
-                for result in go_deep(films_staring(actor), target, branch[:]):
+                yield branch[:]
+            elif True or best_len is None or len(branch) < best_len:
+                for result in go_deep(actor_index[actor], target, branch[:]):
                     yield result
 
 if __name__ == "__main__":
